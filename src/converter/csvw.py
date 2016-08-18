@@ -9,12 +9,12 @@ import rfc3987
 import multiprocessing as mp
 import codecs
 from jinja2 import Template
-from util import get_namespaces, Nanopublication, CSVW, PROV, apply_default_namespaces
+from .util import get_namespaces, Nanopublication, CSVW, PROV, apply_default_namespaces
 from rdflib import URIRef, Literal, Graph, BNode, XSD, Dataset
 from rdflib.resource import Resource
 from rdflib.collection import Collection
 from functools import partial
-from itertools import izip_longest
+from itertools import zip_longest
 
 
 
@@ -56,9 +56,9 @@ def build_schema(infile, outfile, delimiter=',', quotechar='\"', encoding='utf-8
     with open(infile, 'r') as infile_file:
         r = csv.reader(infile_file, delimiter=delimiter, quotechar=quotechar)
 
-        header = r.next()
+        header = next(r)
 
-        print header
+        print(header)
 
         # First column is primary key
         metadata['tableSchema']['primaryKey'] = header[0]
@@ -123,7 +123,7 @@ class CSVWConverter(object):
         with open(schema_file_name) as f:
             self.metadata_graph.load(f, format='json-ld')
 
-        (self.metadata_uri, _) = self.metadata_graph.subject_objects(CSVW.url).next()
+        (self.metadata_uri, _) = next(self.metadata_graph.subject_objects(CSVW.url))
         self.metadata = Item(self.metadata_graph, self.metadata_uri)
 
         # This overrides the identifier of the schema file with that of the nanopublication... do we want that?
@@ -170,7 +170,7 @@ class CSVWConverter(object):
 
         for (s, p, o) in results:
             # Use iribaker
-            escaped_object = URIRef(iribaker.to_iri(unicode(o)))
+            escaped_object = URIRef(iribaker.to_iri(str(o)))
 
             # If the escaped IRI of the object is different from the original, update the graph.
             if escaped_object != o:
@@ -178,7 +178,7 @@ class CSVWConverter(object):
                 # Add the provenance of this operation.
                 self.np.pg.add((escaped_object,
                                 PROV.wasDerivedFrom,
-                                Literal(unicode(o), datatype=XSD.string)))
+                                Literal(str(o), datatype=XSD.string)))
 
         self.np.ingest(self.metadata_graph, self.np.pig.identifier)
 
@@ -213,7 +213,7 @@ class CSVWConverter(object):
     def _parallel(self, reader, target_file):
         # Initialize a pool of processes (default=4)
         pool = mp.Pool(processes=self._processes)
-        print "Running with {} processes".format(self._processes)
+        print("Running with {} processes".format(self._processes))
 
         # The _burstConvert function is partially instantiated, and will be successively called with
         # chunksize rows from the CSV file
@@ -239,7 +239,7 @@ class CSVWConverter(object):
 
 def grouper(n, iterable, padvalue=None):
     "grouper(3, 'abcdefg', 'x') --> ('a','b','c'), ('d','e','f'), ('g','x','x')"
-    return izip_longest(*[iter(iterable)] * n, fillvalue=padvalue)
+    return zip_longest(*[iter(iterable)] * n, fillvalue=padvalue)
 
 
 # This has to be a global method for the parallelization to work.
@@ -249,11 +249,11 @@ def _burstConvert(enumerated_rows, identifier, columns, schema, metadata_graph, 
         count, rows = enumerated_rows
         c = BurstConverter(identifier, columns, schema, metadata_graph, encoding)
 
-        print mp.current_process().name, count, len(rows)
+        print(mp.current_process().name, count, len(rows))
 
         result = c.process(count, rows, chunksize)
 
-        print mp.current_process().name, 'done'
+        print(mp.current_process().name, 'done')
 
         return result
     except:
@@ -279,10 +279,10 @@ class BurstConverter(object):
     def process(self, count, rows, chunksize):
         obs_count = count * chunksize
 
-        print "Row: {}".format(obs_count)
+        print("Row: {}".format(obs_count))
 
         for row in rows:
-            for k, v in row.items():
+            for k, v in list(row.items()):
                 row[k] = v.decode(self.encoding)
 
             count += 1
@@ -296,8 +296,8 @@ class BurstConverter(object):
 
                 try:
                     # Can also be used to prevent the triggering of virtual columns!
-                    value = row[unicode(c.csvw_name)].decode(self.encoding)
-                    if len(value) == 0 or value == unicode(c.csvw_null) or value == unicode(self.schema.csvw_null):
+                    value = row[str(c.csvw_name)].decode(self.encoding)
+                    if len(value) == 0 or value == str(c.csvw_null) or value == str(self.schema.csvw_null):
                         # Skip value if length is zero
                         logger.debug("Length is 0 or value is equal to specified 'null' value")
                         continue
@@ -306,7 +306,7 @@ class BurstConverter(object):
                     pass
 
                 try:
-                    if unicode(c.csvw_virtual) == u'true' and c.csvw_aboutUrl is not None:
+                    if str(c.csvw_virtual) == 'true' and c.csvw_aboutUrl is not None:
                         s = self.expandURL(c.csvw_aboutUrl, row)
 
                     if c.csvw_valueUrl is not None:
@@ -321,16 +321,16 @@ class BurstConverter(object):
                             value = self.render_pattern(c.csvw_value, row)
                         else:
                             # print s, c.csvw_value, c.csvw_propertyUrl, c.csvw_name, self.encoding
-                            value = row[unicode(c.csvw_name)]
+                            value = row[str(c.csvw_name)]
 
                         # If propertyUrl is specified, use it, otherwise use the column name
                         if c.csvw_propertyUrl is not None:
                             p = self.expandURL(c.csvw_propertyUrl, row)
                         else:
                             if "" in self.metadata_graph.namespaces():
-                                propertyUrl = self.metadata_graph.namespaces()[""][unicode(c.csvw_name)]
+                                propertyUrl = self.metadata_graph.namespaces()[""][str(c.csvw_name)]
                             else:
-                                propertyUrl = "http://data.socialhistory.org/ns/resource/{}".format(unicode(c.csvw_name))
+                                propertyUrl = "http://data.socialhistory.org/ns/resource/{}".format(str(c.csvw_name))
 
                             p = self.expandURL(propertyUrl, row)
 
@@ -384,7 +384,7 @@ class BurstConverter(object):
             return rendered_template
 
     def expandURL(self, url_pattern, row, datatype=False):
-        url = self.render_pattern(unicode(url_pattern), row)
+        url = self.render_pattern(str(url_pattern), row)
 
         # DEPRECATED
         # for ns, nsuri in namespaces.items():
@@ -396,7 +396,7 @@ class BurstConverter(object):
             iri = iribaker.to_iri(url)
             rfc3987.parse(iri, rule='IRI')
         except:
-            raise Exception(u"Cannot convert `{}` to valid IRI".format(url))
+            raise Exception("Cannot convert `{}` to valid IRI".format(url))
 
 
         # print "Baked: ", iri

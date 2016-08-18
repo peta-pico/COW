@@ -5,19 +5,19 @@ import csv
 import logging
 import multiprocessing as mp
 import uuid
-import mappings
+from . import mappings
 import datetime
 import json
 
-import js2py
+# import js2py
 
 from iribaker import to_iri
 from functools import partial
-from itertools import izip_longest
+from itertools import zip_longest
 
 from rdflib import Graph, Dataset, URIRef, Literal
 
-from util import Nanopublication, Profile, DatastructureDefinition, apply_default_namespaces, QB, RDF, XSD, SDV, SDR, PROV
+from .util import Nanopublication, Profile, DatastructureDefinition, apply_default_namespaces, QB, RDF, XSD, SDV, SDR, PROV
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -28,7 +28,7 @@ logger.addHandler(ch)
 
 def grouper(n, iterable, padvalue=None):
     "grouper(3, 'abcdefg', 'x') --> ('a','b','c'), ('d','e','f'), ('g','x','x')"
-    return izip_longest(*[iter(iterable)] * n, fillvalue=padvalue)
+    return zip_longest(*[iter(iterable)] * n, fillvalue=padvalue)
 
 
 class Converter(object):
@@ -46,9 +46,9 @@ class Converter(object):
         self._delimiter = ','        # Comma is the default delimiter
         self._quotechar = '\"'       # The double parenthesis is the default quoting character
 
-        
+
         self._source = os.path.join(dirname,  dataset['file'])
-        
+
         self._target = target
 
         self._dataset = dataset
@@ -59,10 +59,10 @@ class Converter(object):
         # For efficiency, convert the QBer-style value lists into dictionaries
         # But only for variables that have values, of course (see e.g. the use of valueUrl).
         self._variables = {}
-        for variable, variable_definition in dataset['variables'].items():
+        for variable, variable_definition in list(dataset['variables'].items()):
             self._variables[variable] = variable_definition
             if 'values' in self._variables[variable]:
-                self._variables[variable]['values_dictionary'] = dict([(unicode(v.get('label','')), v) for v in variable_definition['values']])
+                self._variables[variable]['values_dictionary'] = dict([(str(v.get('label','')), v) for v in variable_definition['values']])
 
         # Initialize the nanopublication structure
         self.publication = Nanopublication(self._source)
@@ -91,7 +91,7 @@ class Converter(object):
     def addProfile(self, author_profile):
         """Adds an author profile to the nanopublication"""
 
-        print "Adding profile"
+        print("Adding profile")
         # We add all triples from a Profile graph to the default graph of the nanopublication
         profile_graph = Profile(author_profile)
         self.publication.ingest(profile_graph)
@@ -100,7 +100,7 @@ class Converter(object):
         self.publication.pig.add((self.publication.uri, PROV['wasAttributedTo'], profile_graph.author_uri))
 
     def addDatastructureDefinition(self):
-        print "Adding datastructure definition"
+        print("Adding datastructure definition")
         # We add all triples from a DatastructureDefinition graph to the assertion graph of the nanopublication
         self.publication.ingest(DatastructureDefinition(self.dataset_uri, self.dataset_name, self._variables), self.publication.ag.identifier)
 
@@ -124,7 +124,7 @@ class Converter(object):
                                     strict=True)
 
                 # The headers are the first line (should correspond to variables)
-                headers = reader.next()
+                headers = next(reader)
 
                 # TODO: Add check that headers and variables actually match!
 
@@ -169,11 +169,11 @@ def _burstConvert(enumerated_rows, graph_identifier, dataset, variables, headers
     count, rows = enumerated_rows
     c = BurstConverter(graph_identifier, dataset, variables, headers)
 
-    print mp.current_process().name, count, len(rows)
+    print(mp.current_process().name, count, len(rows))
 
     result = c.process(count, rows, chunksize)
 
-    print mp.current_process().name, 'done'
+    print(mp.current_process().name, 'done')
 
     return result
 
@@ -250,7 +250,7 @@ class BurstConverter(object):
 
             index = 0
             for col in row:
-                
+
                 variable = self._headers[index]
                 col = col.decode('utf-8')
 
@@ -331,7 +331,7 @@ class BurstConverter(object):
                                 # for the value by applying the specified template to the column value
 
                                 # The format args are key/value couples of header name and value
-                                format_args = dict(zip(self._headers, [c.decode('utf-8') for c in row]))
+                                format_args = dict(list(zip(self._headers, [c.decode('utf-8') for c in row])))
                                 value = to_iri(self._variables[variable]['valueUrl'].format(**format_args))
 
                             else:
@@ -348,15 +348,15 @@ class BurstConverter(object):
                                 # Add it to the graph
                                 self.g.add((observation_uri, original_variable_uri, URIRef(original_value)))
                         else:
-                            print "Category {} unknown".format(category)
+                            print("Category {} unknown".format(category))
 
                     except KeyError:
-                        pass 
+                        pass
 #                         print "Value found for variable {} does not exist in dataset description".format(variable)
 #                         print col
-#                         print row 
-#                         print 
-                        
+#                         print row
+#                         print
+
                 elif variable == '':
                     # print "Empty variable name"
                     pass

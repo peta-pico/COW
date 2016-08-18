@@ -25,4 +25,3 @@ tzlocal==1.2
 uritemplate==0.6
 webencodings==0.5
 wheel==0.26.0
-wsgiref==0.1.2

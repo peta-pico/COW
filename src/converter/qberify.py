@@ -2,7 +2,7 @@ import os
 import csv
 import json
 import logging
-from util import SDR
+from .util import SDR
 from iribaker import to_iri
 
 logger = logging.getLogger(__name__)
@@ -30,7 +30,7 @@ def build_schema(infile, outfile, delimiter=',', quotechar='\"', dataset_name=No
     with open(infile, 'r') as infile_file:
         r = csv.reader(infile_file, delimiter=delimiter, quotechar=quotechar)
 
-        header = r.next()
+        header = next(r)
 
         logger.debug(header)
 

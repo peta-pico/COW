@@ -5,7 +5,7 @@ import datetime
 import string
 import logging
 import iribaker
-import urllib
+import urllib.request, urllib.parse, urllib.error
 import uuid
 
 from hashlib import sha1
@@ -35,12 +35,12 @@ def init():
         namespaces = yaml.load(nsfile)
 
     # Replace each value with a Namespace object for that value
-    for prefix, uri in namespaces.items():
+    for prefix, uri in list(namespaces.items()):
         if isinstance(prefix, str) and isinstance(uri, str):
             namespaces[prefix] = Namespace(uri)
 
     # Add all namespace prefixes to the globals dictionary (for exporting)
-    for prefix, namespace in namespaces.items():
+    for prefix, namespace in list(namespaces.items()):
         globals()[prefix.upper()] = namespace
 
 # Make sure the namespaces are initialized when the module is imported
@@ -75,8 +75,9 @@ def git_hash(data):
     Generates a Git-compatible hash for identifying (the current version of) the data
     """
     s = sha1()
-    s.update("blob %u\0" % len(data))
-    s.update(data)
+    blob = "blob %u\0" % len(data)
+    s.update(blob.encode('utf-8'))
+    s.update(data.encode('utf-8'))
     return s.hexdigest()
 
 
@@ -86,7 +87,7 @@ def apply_default_namespaces(graph):
     provided as argument and returns the graph.
     """
 
-    for prefix, namespace in namespaces.items():
+    for prefix, namespace in list(namespaces.items()):
         graph.bind(prefix, namespace)
 
     return graph
@@ -145,7 +146,7 @@ class DatastructureDefinition(Graph):
 
         self.add((dataset_uri, QB['structure'], structure_uri))
 
-        for variable_id, variable in variables.items():
+        for variable_id, variable in list(variables.items()):
             variable_uri = URIRef(variable['original']['uri'])
             variable_label = Literal(variable['original']['label'])
             variable_type = URIRef(variable['type'])
@@ -259,7 +260,7 @@ class Profile(Graph):
         # A URI that represents the author
 
         # Virtuoso does not accept the @
-        self.author_uri = SDP[urllib.quote_plus(profile['email'])]
+        self.author_uri = SDP[urllib.parse.quote_plus(profile['email'])]
 
         super(Profile, self).__init__(identifier=self.author_uri)
 
@@ -295,7 +296,7 @@ class Nanopublication(Dataset):
 
 
         # Assign default namespace prefixes
-        for prefix, namespace in namespaces.items():
+        for prefix, namespace in list(namespaces.items()):
             self.bind(prefix, namespace)
 
         # Get the current date and time (UTC)
@@ -303,7 +304,7 @@ class Nanopublication(Dataset):
 
         # Obtain a hash of the source file used for the conversion.
         # TODO: Get this directly from GitLab
-        source_hash = git_hash(file(file_name).read())
+        source_hash = git_hash(open(file_name,'r').read())
 
         # Shorten the source hash to 8 digits (similar to Github)
         short_hash = source_hash[:8]

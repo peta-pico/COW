@@ -1,4 +1,4 @@
-from converter.csvw import CSVWConverter, build_schema
+from .converter.csvw import CSVWConverter, build_schema
 import os
 import datetime
 import argparse
@@ -16,24 +16,24 @@ if __name__ == '__main__':
     for source_file in args.files:
 
         if args.mode == 'build':
-            print "Building schema for {}".format(source_file)
+            print("Building schema for {}".format(source_file))
             target_file = "{}-metadata.json".format(source_file)
 
             if os.path.exists(target_file):
                 modifiedTime = os.path.getmtime(target_file)
                 timestamp = datetime.datetime.fromtimestamp(modifiedTime).isoformat()
                 os.rename(target_file, target_file+"_"+timestamp)
-                print "Backed up prior version of schema to {}".format(target_file+"_"+timestamp)
+                print("Backed up prior version of schema to {}".format(target_file+"_"+timestamp))
 
-            print "Delimiter is: ", repr(args.delimiter)
+            print("Delimiter is: ", repr(args.delimiter))
             build_schema(source_file, target_file, dataset_name=args.dataset, delimiter=args.delimiter, quotechar=args.quotechar)
 
         elif args.mode == 'convert':
-            print "Converting {} to RDF".format(source_file)
+            print("Converting {} to RDF".format(source_file))
             c = CSVWConverter(source_file, delimiter=args.delimiter, quotechar=args.quotechar)
             c.convert()
         else:
-            print "Whoops for file {}".format(f)
+            print("Whoops for file {}".format(f))
 
 # FILE = '../sdh-private-hisco-datasets/hisco_45.csv'
 # SCHEMA = '../sdh-private-hisco-datasets/hisco_45.csv-metadata.json'

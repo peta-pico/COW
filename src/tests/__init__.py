@@ -7,6 +7,10 @@ from converter.qberify import build_schema
 import converter.csvw as csvw
 from rdflib import Dataset
 
+import locale
+
+locale.setlocale(locale.LC_ALL, '')
+
 THIS_DIRECTORY = os.path.dirname(__file__)
 
 class TestConversion(unittest.TestCase):
