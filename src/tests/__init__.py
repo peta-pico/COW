@@ -122,6 +122,15 @@ class TestConversion(unittest.TestCase):
         c = csvw.CSVWConverter(os.path.join(os.path.dirname(__file__), 'occupation_link_test.csv'), processes=1)
         c.convert()
 
+    def test_csvw_conversion_hashed_uris(self):
+        """
+        Tests the generating of hashed uris
+        Uses simple, serial CSVW conversion (1 threads) capability of csvw.Converter class
+        """
+
+        c = csvw.CSVWConverter(os.path.join(os.path.dirname(__file__), 'occupation_link_test.csv'), processes=1, hashed_uris=True)
+        c.convert()
+
     def test_spaces_empty_col_csvw_conversion(self):
         """
         Tests fix for ISO-8859-1 encoding issue, https://github.com/CLARIAH/wp4-converters/issues/15.
