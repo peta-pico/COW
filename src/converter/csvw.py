@@ -145,7 +145,7 @@ class Item(Resource):
 
 class CSVWConverter(object):
 
-    def __init__(self, file_name, delimiter=',', quotechar='\"', encoding='utf-8', processes=1, chunksize=5000):
+    def __init__(self, file_name, delimiter=',', quotechar='\"', encoding='utf-8', processes=1, chunksize=5000, hashed_uris=False):
         logger.info("Initializing converter for {}".format(file_name))
         self.file_name = file_name
         self.target_file = self.file_name + '.nq'
@@ -160,7 +160,8 @@ class CSVWConverter(object):
         logger.info("Processes: {}".format(self._processes))
         logger.info("Chunksize: {}".format(self._chunksize))
 
-        self.np = Nanopublication(file_name)
+        # Generate a nanopublication and its graphs, pass the 'hashed_uris' flag.
+        self.np = Nanopublication(file_name, hashed_uris)
         # self.metadata = json.load(open(schema_file_name, 'r'))
         self.metadata_graph = Graph()
         with open(schema_file_name) as f:

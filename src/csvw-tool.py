@@ -12,6 +12,7 @@ parser.add_argument('--quotechar', dest='quotechar', default='\"', type=str, hel
 parser.add_argument('--processes', dest='processes', default='4', type=int, help="The number of processes the converter should use")
 parser.add_argument('--chunksize', dest='chunksize', default='5000', type=int, help="The number of rows processed at each time")
 parser.add_argument('--base', dest='base', default='http://data.socialhistory.org/resource/', type=str, help="The base for URIs generated with the schema (only relevant when `build`ing a schema)")
+parser.add_argument('--hashed-uris', dest='base', default=False, type=bool, help="Set to True to enable versioned/hashed URIs for graph names (complicates SPARQL queries, but needed when serving multiple versions at once)")
 
 if __name__ == '__main__':
     args = parser.parse_args()
@@ -35,7 +36,7 @@ if __name__ == '__main__':
             print "Converting {} to RDF".format(source_file)
 
             try:
-                c = CSVWConverter(source_file, delimiter=args.delimiter, quotechar=args.quotechar, processes=args.processes, chunksize=args.chunksize)
+                c = CSVWConverter(source_file, delimiter=args.delimiter, quotechar=args.quotechar, processes=args.processes, chunksize=args.chunksize, hashed_uris=args.hashed_uris)
                 c.convert()
             except:
                 print "Something went wrong, skipping {}.".format(source_file)
