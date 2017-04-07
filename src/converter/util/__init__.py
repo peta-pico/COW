@@ -284,7 +284,7 @@ class Nanopublication(Dataset):
           function has been called
     """
 
-    def __init__(self, file_name):
+    def __init__(self, file_name, hashed_uris=False):
         """
         Initialize the graphs needed for the nanopublication
         """
@@ -293,10 +293,10 @@ class Nanopublication(Dataset):
         # Virtuoso does not accept BNodes as graph names
         self.default_context = Graph(store=self.store, identifier=URIRef(uuid.uuid4().urn))
 
-
         # Assign default namespace prefixes
         for prefix, namespace in namespaces.items():
             self.bind(prefix, namespace)
+
 
         # Get the current date and time (UTC)
         timestamp = datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M")
@@ -320,13 +320,35 @@ class Nanopublication(Dataset):
         # The nanopublication graph
         # ----
         name = (file_name.rsplit('/', 1)[-1]).split('.')[0]
-        self.uri = SDR[name + '/nanopublication/' + hash_part]
-
+        self.uri_versioned = SDR[name + '/nanopublication/' + hash_part]
+        self.uri = SDR[name + '/nanopublication']
 
         # The Nanopublication consists of three graphs
-        assertion_graph_uri = SDR[name + '/assertion/' + hash_part]
-        provenance_graph_uri = SDR[name + '/provenance/' + hash_part]
-        pubinfo_graph_uri = SDR[name + '/pubinfo/' + hash_part]
+        # First the version uris (based on the hash and timestamp)
+        assertion_graph_uri_version = SDR[name + '/assertion/' + hash_part]
+        provenance_graph_uri_version = SDR[name + '/provenance/' + hash_part]
+        pubinfo_graph_uri_version = SDR[name + '/pubinfo/' + hash_part]
+
+        assertion_graph_uri = SDR[name + '/assertion']
+        provenance_graph_uri = SDR[name + '/provenance']
+        pubinfo_graph_uri = SDR[name + '/pubinfo']
+
+        if hashed_uris:
+            # If we want to use hashed uris (hashed_uris=True) then the graph uris *are* the hashed uris
+            self.uri = self.uri_versioned
+
+            assertion_graph_uri = assertion_graph_uri_version
+            provenance_graph_uri = provenance_graph_uri_version
+            pubinfo_graph_uri = pubinfo_graph_uri_version
+        else:
+            # Otherwise, the graph uris are simply the unversioned URIs
+
+            # We'll make sure to state that these are still versioned, but not syntactically
+            # This approach assumes that a triplestore will only contain a single version!
+            self.add((self.uri, OWL['sameAs'], self.uri_versioned))
+            self.add((assertion_graph_uri, OWL['sameAs'], assertion_graph_uri_version))
+            self.add((provenance_graph_uri, OWL['sameAs'], provenance_graph_uri_version))
+            self.add((pubinfo_graph_uri, OWL['sameAs'], pubinfo_graph_uri_version))
 
         self.ag = self.graph(assertion_graph_uri)
         self.pg = self.graph(provenance_graph_uri)
