@@ -1,4 +1,4 @@
-from rdflib import Dataset, Graph, Namespace, RDF, RDFS, OWL, XSD, Literal, URIRef
+from rdflib import Dataset, Graph, ConjunctiveGraph, Namespace, RDF, RDFS, OWL, XSD, Literal, URIRef
 import os
 import yaml
 import datetime
@@ -304,7 +304,11 @@ class Nanopublication(Dataset):
         super(Dataset, self).__init__()
 
         # Virtuoso does not accept BNodes as graph names
-        self.default_context = Graph(store=self.store, identifier=URIRef(uuid.uuid4().urn))
+        graph_uuid = str(uuid.uuid4())
+        name = (os.path.basename(file_name)).split('.')[0]
+
+        head_graph_uri =  SDR[name + '/Head/' + graph_uuid]
+        self.default_context = Graph(store=self.store, identifier=head_graph_uri)
 
 
         # Assign default namespace prefixes
@@ -316,30 +320,29 @@ class Nanopublication(Dataset):
 
         # Obtain a hash of the source file used for the conversion.
         # TODO: Get this directly from GitLab
-        source_hash = git_hash(open(file_name).read())
+        # source_hash = git_hash(open(file_name).read())
 
         # Shorten the source hash to 8 digits (similar to Github)
-        short_hash = source_hash[:8]
+        # short_hash = source_hash[:8]
 
         # Determine a 'hash_part' for all timestamped URIs generated through this procedure
-        hash_part = short_hash + '/' + timestamp
+        # hash_part = short_hash + '/' + timestamp
 
         # A URI that represents the version of the file being converted
-        self.dataset_version_uri = SDR[source_hash]
-        self.add((self.dataset_version_uri, SDV['path'], Literal(file_name, datatype=XSD.string)))
-        self.add((self.dataset_version_uri, SDV['sha1_hash'], Literal(source_hash, datatype=XSD.string)))
+        # self.dataset_version_uri = SDR[source_hash]
+        # self.add((self.dataset_version_uri, SDV['path'], Literal(file_name, datatype=XSD.string)))
+        # self.add((self.dataset_version_uri, SDV['sha1_hash'], Literal(source_hash, datatype=XSD.string)))
 
         # ----
         # The nanopublication graph
         # ----
-        name = (os.path.basename(file_name)).split('.')[0]
-        self.uri = SDR[name + '/nanopublication/' + hash_part]
+        self.uri = SDR[name + '/nanopublication/' + graph_uuid]
 
 
         # The Nanopublication consists of three graphs
-        assertion_graph_uri = SDR[name + '/assertion/' + hash_part]
-        provenance_graph_uri = SDR[name + '/provenance/' + hash_part]
-        pubinfo_graph_uri = SDR[name + '/pubinfo/' + hash_part]
+        assertion_graph_uri = SDR[name + '/assertion/' + graph_uuid]
+        provenance_graph_uri = SDR[name + '/provenance/' + graph_uuid]
+        pubinfo_graph_uri = SDR[name + '/pubinfo/' + graph_uuid]
 
         self.ag = self.graph(assertion_graph_uri)
         self.pg = self.graph(provenance_graph_uri)
@@ -349,23 +352,20 @@ class Nanopublication(Dataset):
         self.add((self.uri , RDF.type, NP['Nanopublication']))
         # The link to the assertion
         self.add((self.uri , NP['hasAssertion'], assertion_graph_uri))
-        self.add((assertion_graph_uri, RDF.type, NP['Assertion']))
         # The link to the provenance graph
         self.add((self.uri , NP['hasProvenance'], provenance_graph_uri))
-        self.add((provenance_graph_uri, RDF.type, NP['Provenance']))
         # The link to the publication info graph
         self.add((self.uri , NP['hasPublicationInfo'], pubinfo_graph_uri))
-        self.add((pubinfo_graph_uri, RDF.type, NP['PublicationInfo']))
 
         # ----
         # The provenance graph
         # ----
 
         # Provenance information for the assertion graph (the data structure definition itself)
-        self.pg.add((assertion_graph_uri, PROV['wasDerivedFrom'], self.dataset_version_uri))
+        # self.pg.add((assertion_graph_uri, PROV['wasDerivedFrom'], self.dataset_version_uri))
         # self.pg.add((dataset_uri, PROV['wasDerivedFrom'], self.dataset_version_uri))
-        self.pg.add((assertion_graph_uri, PROV['generatedAtTime'],
-                     Literal(timestamp, datatype=XSD.dateTime)))
+        # self.pg.add((assertion_graph_uri, PROV['generatedAtTime'],
+                     # Literal(timestamp, datatype=XSD.dateTime)))
 
         # ----
         # The publication info graph
@@ -374,7 +374,7 @@ class Nanopublication(Dataset):
         # The URI of the latest version of this converter
         # TODO: should point to the actual latest commit of this converter.
         # TODO: consider linking to this as the plan of some activity, rather than an activity itself.
-        clariah_uri = URIRef('https://github.com/CLARIAH/wp4-converters')
+        clariah_uri = URIRef('https://github.com/CLARIAH/COW')
 
         self.pig.add((self.uri, PROV['wasGeneratedBy'], clariah_uri))
         self.pig.add((self.uri, PROV['generatedAtTime'],
@@ -393,3 +393,24 @@ class Nanopublication(Dataset):
         else:
             for s, p, o in graph:
                 self.add((s, p, o, target_graph))
+
+    def as_string(self, output_format):
+        serialized = bytes()
+        x = ConjunctiveGraph()
+        for s,p,o,g in self.quads((None,None,None,self.default_context.identifier)):
+            x.add((s,p,o,self.default_context.identifier))
+        serialized += x.serialize(format=output_format)
+        x = ConjunctiveGraph()
+        for s,p,o,g in self.quads((None,None,None,self.ag.identifier)):
+            x.add((s,p,o,self.ag.identifier))
+        serialized += x.serialize(format=output_format)
+        x = ConjunctiveGraph()
+        for s,p,o,g in self.quads((None,None,None,self.pg.identifier)):
+            x.add((s,p,o,self.pg.identifier))
+        serialized += x.serialize(format=output_format)
+        x = ConjunctiveGraph()
+        for s,p,o,g in self.quads((None,None,None,self.pig.identifier)):
+             x.add((s,p,o,self.pig.identifier))
+        serialized += x.serialize(format=output_format)
+
+        return serialized
