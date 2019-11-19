@@ -42,8 +42,8 @@
     'http://purl.org/linked-data/sdmx/2009/concept#'], sdmx-dimension: !!python/object/new:rdflib.namespace.Namespace [
     'http://purl.org/linked-data/sdmx/2009/dimension#'], sdmx-measure: !!python/object/new:rdflib.namespace.Namespace [
     'http://purl.org/linked-data/sdmx/2009/measure#'], sdr: !!python/object/new:rdflib.namespace.Namespace [
-    'https://iisg.amsterdam/'], sdv: !!python/object/new:rdflib.namespace.Namespace [
-    'https://iisg.amsterdam/vocab/'], skos: !!python/object/new:rdflib.namespace.Namespace [
+    'http://purl.org/nanopub/temp/'], sdv: !!python/object/new:rdflib.namespace.Namespace [
+    'http://purl.org/nanopub/temp/vocab/'], skos: !!python/object/new:rdflib.namespace.Namespace [
     'http://www.w3.org/2004/02/skos/core#'], time: !!python/object/new:rdflib.namespace.Namespace [
     'http://www.w3.org/2006/time#'], xml: !!python/object/new:rdflib.namespace.Namespace [
     'http://www.w3.org/XML/1998/namespace/'], xsd: !!python/object/new:rdflib.namespace.Namespace [
