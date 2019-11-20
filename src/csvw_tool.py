@@ -46,7 +46,7 @@ class COW(object):
                             g = ConjunctiveGraph()
                             g.parse(nquads_file, format='nquads')
                         # We serialize in the requested format
-                        with open(source_file + '.' + extensions[output_format], 'w') as output_file:
+                        with open(source_file + '.' + extensions[output_format], 'wb') as output_file:
                             output_file.write(g.serialize(format=output_format))
 
                 except ValueError:
