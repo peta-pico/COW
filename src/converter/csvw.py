@@ -422,7 +422,7 @@ class CSVWConverter(object):
 
             #  self.convert_info()
             # Finally, write the nanopublication info to file
-            target_file.write(self.np.serialize(format=self.output_format))
+            #target_file.write(self.np.serialize(format=self.output_format))
 
 
 def grouper(n, iterable, padvalue=None):
