@@ -47,7 +47,7 @@ class COW(object):
                             g.parse(nquads_file, format='nquads')
                         # We serialize in the requested format
                         with open(source_file + '.' + extensions[output_format], 'wb') as output_file:
-                            output_file.write(g.serialize(format=output_format))
+                            output_file.write(g.serialize(format=output_format, spacious=False))
 
                 except ValueError:
                     raise
