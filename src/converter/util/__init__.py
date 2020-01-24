@@ -304,10 +304,10 @@ class Nanopublication(Dataset):
         super(Dataset, self).__init__()
 
         # Virtuoso does not accept BNodes as graph names
-        graph_uuid = str(uuid.uuid4())
+        self.graph_uuid = str(uuid.uuid4())
         name = (os.path.basename(file_name)).split('.')[0] + '/'
 
-        head_graph_uri =  SDR[name + graph_uuid + '/Head']
+        head_graph_uri =  SDR[name + self.graph_uuid + '/Head']
         self.default_context = Graph(store=self.store, identifier=head_graph_uri)
 
 
@@ -336,13 +336,13 @@ class Nanopublication(Dataset):
         # ----
         # The nanopublication graph
         # ----
-        self.uri = SDR[name + graph_uuid + '/']
+        self.uri = SDR[name + self.graph_uuid + '/']
 
 
         # The Nanopublication consists of three graphs
-        assertion_graph_uri = SDR[name + graph_uuid + '/assertion']
-        provenance_graph_uri = SDR[name + graph_uuid + '/provenance']
-        pubinfo_graph_uri = SDR[name + graph_uuid + '/pubinfo']
+        assertion_graph_uri = SDR[name + self.graph_uuid + '/assertion']
+        provenance_graph_uri = SDR[name + self.graph_uuid + '/provenance']
+        pubinfo_graph_uri = SDR[name + self.graph_uuid + '/pubinfo']
 
         self.ag = self.graph(assertion_graph_uri)
         self.pg = self.graph(provenance_graph_uri)

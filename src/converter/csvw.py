@@ -514,6 +514,7 @@ class BurstConverter(object):
             # set the '_row' value in case we need to generate 'default' URIs for each observation ()
             # logger.debug("row: {}".format(obs_count)) #removed for readability
             row[u'_row'] = obs_count
+            row[u'_uuid'] = self.np.graph_uuid
             count += 1
 
             # print(row)
