@@ -584,14 +584,22 @@ class BurstConverter(object):
                         # This is an object property, because the value needs to be cast to a URL
                         p = self.expandURL(c.csvw_propertyUrl, row)
                         o = self.expandURL(c.csvw_valueUrl, row)
-                        if self.isValueNull(os.path.basename(unicode(o)), c):
+                        try:
+                            o_str = unicode(o)
+                        except NameError:
+                            o_str = str(o)
+                        if self.isValueNull(os.path.basename(o_str), c):
                             logger.debug("skipping empty value")
                             continue
 
                         if csvw_virtual == u'true' and c.csvw_datatype is not None and URIRef(c.csvw_datatype) == XSD.anyURI:
                             # Special case: this is a virtual column with object values that are URIs
                             # For now using a test special property
-                            value = row[unicode(c.csvw_name)].encode('utf-8')
+                            try:
+                                csvw_name_str = unicode(c.csvw_name)
+                            except NameError:
+                                csvw_name_str = str(c.csvw_name)
+                            value = row[csvw_name_str].encode('utf-8')
                             o = URIRef(iribaker.to_iri(value))
 
                         if csvw_virtual == u'true' and c.csvw_datatype is not None and URIRef(c.csvw_datatype) == XSD.linkURI:
