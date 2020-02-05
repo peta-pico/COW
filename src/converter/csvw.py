@@ -286,31 +286,17 @@ class CSVWConverter(object):
 
         for (s, p, o) in results:
             # Use iribaker
-            try:
-                # Python 2
-                escaped_object = URIRef(iribaker.to_iri(unicode(o)))
-            except NameError:
-                # Python 3
-                escaped_object = URIRef(iribaker.to_iri(str(o)))
-                print(escaped_object)
+            escaped_object = URIRef(iribaker.to_iri(unicodex(o)))
 
             # If the escaped IRI of the object is different from the original,
             # update the graph.
             if escaped_object != o:
                 self.metadata_graph.set((s, p, escaped_object))
                 # Add the provenance of this operation.
-                try:
-                    # Python 2
-                    self.np.pg.add((escaped_object,
-                                PROV.wasDerivedFrom,
-                                Literal(unicode(o), datatype=XSD.string)))
-                except NameError:
-                    # Python 3
-                    self.np.pg.add((escaped_object,
-                                PROV.wasDerivedFrom,
-                                Literal(str(o), datatype=XSD.string)))
-                    print(str(o))
-
+                self.np.pg.add((escaped_object,
+                            PROV.wasDerivedFrom,
+                            Literal(unicodex(o), datatype=XSD.string)))
+            
         #walk through the metadata graph to remove illigal "Resource" blank node caused by python3 transition.
         for s, p, o in self.metadata_graph.triples((None, None, None)):
             if s.startswith("Resource("):
@@ -479,7 +465,7 @@ class BurstConverter(object):
             col = str(n.csvw_name)
             val = str(n.csvw_null)
             if row[col] == val:
-                # logger.debug("Value of column {} ('{}') is equal to specified 'null' value: '{}'".format(col, unicode(row[col]).encode('utf-8'), val))
+                # logger.debug("Value of column {} ('{}') is equal to specified 'null' value: '{}'".format(col, unicodex(row[col]).encode('utf-8'), val))
                 # There is a match with null value
                 return True
         # There is no match with null value
@@ -532,12 +518,7 @@ class BurstConverter(object):
                     # columns!
 
                     # Get the raw value from the cell in the CSV file
-                    try:
-                        # Python 2
-                        value = row[unicode(c.csvw_name)]
-                    except NameError:
-                        # Python 3
-                        value = row[str(c.csvw_name)]
+                    value = row[unicodex(c.csvw_name)]
 
                     # This checks whether we should continue parsing this cell, or skip it.
                     if self.isValueNull(value, c):
@@ -564,18 +545,11 @@ class BurstConverter(object):
                     # This overrides the subject resource 's' that has been created earlier based on the
                     # schema wide aboutURLSchema specification.
 
-                    try:
-                        csvw_virtual = unicode(c.csvw_virtual)
-                        csvw_name = unicode(c.csvw_name)
-                        csvw_value = unicode(c.csvw_value)
-                        about_url = unicode(c.csvw_aboutUrl)
-                        value_url = unicode(c.csvw_valueUrl)
-                    except NameError:
-                        csvw_virtual = str(c.csvw_virtual)
-                        csvw_name = str(c.csvw_name)
-                        csvw_value = str(c.csvw_value)
-                        about_url = str(c.csvw_aboutUrl)
-                        value_url = str(c.csvw_valueUrl)
+                    csvw_virtual = unicodex(c.csvw_virtual)
+                    csvw_name = unicodex(c.csvw_name)
+                    csvw_value = unicodex(c.csvw_value)
+                    about_url = unicodex(c.csvw_aboutUrl)
+                    value_url = unicodex(c.csvw_valueUrl)
 
                     if csvw_virtual == u'true' and c.csvw_aboutUrl is not None:
                         s = self.expandURL(c.csvw_aboutUrl, row)
@@ -584,22 +558,14 @@ class BurstConverter(object):
                         # This is an object property, because the value needs to be cast to a URL
                         p = self.expandURL(c.csvw_propertyUrl, row)
                         o = self.expandURL(c.csvw_valueUrl, row)
-                        try:
-                            o_str = unicode(o)
-                        except NameError:
-                            o_str = str(o)
-                        if self.isValueNull(os.path.basename(o_str), c):
+                        if self.isValueNull(os.path.basename(unicodex(o)), c):
                             logger.debug("skipping empty value")
                             continue
 
                         if csvw_virtual == u'true' and c.csvw_datatype is not None and URIRef(c.csvw_datatype) == XSD.anyURI:
                             # Special case: this is a virtual column with object values that are URIs
                             # For now using a test special property
-                            try:
-                                csvw_name_str = unicode(c.csvw_name)
-                            except NameError:
-                                csvw_name_str = str(c.csvw_name)
-                            value = row[csvw_name_str].encode('utf-8')
+                            value = row[unicodex(c.csvw_name)].encode('utf-8')
                             o = URIRef(iribaker.to_iri(value))
 
                         if csvw_virtual == u'true' and c.csvw_datatype is not None and URIRef(c.csvw_datatype) == XSD.linkURI:
@@ -632,8 +598,8 @@ class BurstConverter(object):
                         elif c.csvw_name is not None:
                             # print s
                             # print c.csvw_name, self.encoding
-                            # print row[unicode(c.csvw_name)], type(row[unicode(c.csvw_name)])
-                            # print row[unicode(c.csvw_name)].encode('utf-8')
+                            # print row[unicodex(c.csvw_name)], type(row[unicodex(c.csvw_name)])
+                            # print row[unicodex(c.csvw_name)].encode('utf-8')
                             # print '...'
                             value = row[csvw_name].encode('utf-8')
                         else:
@@ -780,10 +746,10 @@ class BurstConverter(object):
     def isValueNull(self, value, c):
         """This checks whether we should continue parsing this cell, or skip it because it is empty or a null value."""
         try:
-            if len(value) == 0 and unicode(c.csvw_parseOnEmpty) == u"true":
+            if len(value) == 0 and unicodex(c.csvw_parseOnEmpty) == u"true":
                 # print("Not skipping empty value")
                 return False #because it should not be skipped
-            elif len(value) == 0 or value == unicode(c.csvw_null) or value in [unicode(n) for n in c.csvw_null] or value == unicode(self.schema.csvw_null):
+            elif len(value) == 0 or value == unicodex(c.csvw_null) or value in [unicodex(n) for n in c.csvw_null] or value == unicodex(self.schema.csvw_null):
                 # Skip value if length is zero and equal to (one of) the null value(s)
                 # logger.debug(
                 #     "Length is 0 or value is equal to specified 'null' value")
@@ -792,3 +758,10 @@ class BurstConverter(object):
             # logger.debug("null does not exist or is not a list.") #this line will print for every cell in a csv without a defined null value.
             pass
         return False
+
+
+def unicodex(s):
+    try:
+        return unicode(s)  # Python 2
+    except NameError:
+        return str(s)  # Python 3
