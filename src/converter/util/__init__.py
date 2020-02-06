@@ -297,14 +297,16 @@ class Nanopublication(Dataset):
     NOTE: Will only work if the required namespaces are specified in namespaces.yaml and the init() function has been called
     """
 
-    def __init__(self, file_name):
+    def __init__(self, file_name, graph_uuid=None):
         """
         Initialize the graphs needed for the nanopublication
         """
         super(Dataset, self).__init__()
 
         # Virtuoso does not accept BNodes as graph names
-        self.graph_uuid = str(uuid.uuid4())
+        self.graph_uuid = graph_uuid
+        if (self.graph_uuid == None):
+            self.graph_uuid = str(uuid.uuid4())
         name = (os.path.basename(file_name)).split('.')[0] + '/'
 
         head_graph_uri =  SDR[name + self.graph_uuid + '/Head']

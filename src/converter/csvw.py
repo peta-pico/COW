@@ -189,6 +189,7 @@ class CSVWConverter(object):
         self.file_name = file_name
         self.output_format = output_format
         self.target_file = self.file_name + '.' + extensions[self.output_format]
+        self.target_table_file = self.file_name + '.table.' + extensions[self.output_format]
         schema_file_name = file_name + '-metadata.json'
 
         if not os.path.exists(schema_file_name) or not os.path.exists(file_name):
@@ -278,8 +279,8 @@ class CSVWConverter(object):
     def convert_info(self):
         """Converts the CSVW JSON file to valid RDF for serializing into the Nanopublication publication info graph."""
         
-        self.np = Nanopublication(self.file_name)
-        self.np.pg.add((self.np.ag.identifier, PROV['wasDerivedFrom'], self.metadata_uri))
+        np = Nanopublication(self.file_name, "table")
+        np.pg.add((np.ag.identifier, PROV['wasDerivedFrom'], self.metadata_uri))
         
         results = self.metadata_graph.query("""SELECT ?s ?p ?o
                                                WHERE { ?s ?p ?o .
@@ -296,7 +297,7 @@ class CSVWConverter(object):
             if escaped_object != o:
                 self.metadata_graph.set((s, p, escaped_object))
                 # Add the provenance of this operation.
-                self.np.ag.add((escaped_object,
+                np.ag.add((escaped_object,
                             PROV.wasDerivedFrom,
                             Literal(unicodex(o), datatype=XSD.string)))
             
@@ -310,12 +311,12 @@ class CSVWConverter(object):
         # Add the information of the schema file to the provenance graph of the
         # nanopublication
 
-        self.np.ingest(self.metadata_graph, self.np.ag.identifier)
+        np.ingest(self.metadata_graph, np.ag.identifier)
 
-        # for s,p,o in self.np.triples((None,None,None)):
+        # for s,p,o in np.triples((None,None,None)):
         #     print(s.__repr__,p.__repr__,o.__repr__)
 
-        return self.np.as_string(output_format=self.output_format)
+        return np.as_string(output_format=self.output_format)
 
     def convert(self):
         """Starts a conversion process (in parallel or as a single process) as defined in the arguments passed to the :class:`CSVWConverter` initialization"""
@@ -365,8 +366,8 @@ class CSVWConverter(object):
                 except TypeError:
                     # Python 3
                     target_file.write(out.decode('utf-8'))
-
-            target_file.write(self.convert_info())
+        with open(self.target_table_file, 'wb') as target_table_file:
+            target_table_file.write(self.convert_info())
 
     def _parallel(self):
         """Starts parallel processes for converting the file. Each process will receive max ``chunksize`` number of rows"""
@@ -406,8 +407,8 @@ class CSVWConverter(object):
                 # Make sure to close and join the pool once finished.
                 pool.close()
                 pool.join()
-
-            target_file.write(self.convert_info())
+        with open(self.target_table_file, 'wb') as target_table_file:
+            target_table_file.write(self.convert_info())
 
 
 def grouper(n, iterable, padvalue=None):
